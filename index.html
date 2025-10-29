@@ -12,21 +12,6 @@
 	<meta name="keywords" content="free html5, free template, free bootstrap, html5, css3, mobile first, responsive" />
 	<meta name="author" content="FREEHTML5.CO" />
 
-	<!--
-      //////////////////////////////////////////////////////
-
-      FREE HTML5 TEMPLATE
-      DESIGNED & DEVELOPED by FREEHTML5.CO
-
-      Website: 		http://freehtml5.co/
-      Email: 			info@freehtml5.co
-      Twitter: 		http://twitter.com/fh5co
-      Facebook: 		https://www.facebook.com/fh5co
-
-      //////////////////////////////////////////////////////
-       -->
-
-	<!-- Facebook and Twitter integration -->
 	<meta property="og:title" content=""/>
 	<meta property="og:image" content=""/>
 	<meta property="og:url" content=""/>
@@ -303,48 +288,7 @@
 			</div>
 			<div class="row row-bottom-padded-md">
 				<div class="col-md-12">
-					<ul id="fh5co-gallery-list">
-						<li class="one-third animate-box" data-animate-effect="fadeIn" style="background-image: url(images/i7.png); ">
-							<a class="color-2">
-								<div class="case-studies-summary">
-									<span>1 Photos</span>
-									<h2>Lemon tea!</h2>
-								</div>
-							</a>
-						</li>
-						<li class="one-third animate-box" data-animate-effect="fadeIn" style="background-image: url(images/i4.JPG); ">
-							<a class="color-2">
-								<div class="case-studies-summary">
-									<span>1 Photos</span>
-									<h2>Walking street!</h2>
-								</div>
-							</a>
-						</li>
-						<li class="one-third animate-box" data-animate-effect="fadeIn" style="background-image: url(images/i5.JPG); ">
-							<a  class="color-2">
-								<div class="case-studies-summary">
-									<span>1 Photos</span>
-									<h2>Bae!</h2>
-								</div>
-							</a>
-						</li>
-						<li class="one-third animate-box" data-animate-effect="fadeIn" style="background-image: url(images/i6.JPG); ">
-							<a  class="color-2">
-								<div class="case-studies-summary">
-									<span>1 Photos</span>
-									<h2>Ho Chi Minh Mausoleum!</h2>
-								</div>
-							</a>
-						</li>
-						<li class="one-third animate-box" data-animate-effect="fadeIn" style="background-image: url(images/vin.JPG); ">
-							<a  class="color-2">
-								<div class="case-studies-summary">
-									<span>1 Photos</span>
-									<h2>Vincom Mega Mall</h2>
-								</div>
-							</a>
-						</li>
-					</ul>
+					<ul id="fh5co-gallery-list"></ul> <!-- sẽ được sinh tự động -->
 				</div>
 			</div>
 		</div>
@@ -484,6 +428,76 @@
 		color: #333;
 	}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const galleryList = document.getElementById('fh5co-gallery-list');
+
+  try {
+    const res = await fetch('https://thaotra.info.vn/api/get-files'); // hoặc /api/get-files nếu có proxy
+    const result = await res.json();
+
+    if (result.code === '00' && Array.isArray(result.data)) {
+      galleryList.innerHTML = '';
+
+      // Tạo observer để chỉ add animation khi phần tử vào viewport
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const el = e.target;
+            // bật hiệu ứng và cho hiện
+            el.classList.add('animated', 'fadeIn');
+            el.style.opacity = '1';
+            io.unobserve(el);
+          }
+        });
+      }, {
+        root: null,
+        rootMargin: '0px 0px -10% 0px',
+        threshold: 0.1
+      });
+
+      const origin = window.location.origin;
+
+      result.data.forEach((file, index) => {
+        const fileUrl = file.fileUrl?.startsWith('http')
+          ? file.fileUrl
+          : `${origin}${file.fileUrl}`;
+        const fileName = (file.fileName || `Ảnh ${index + 1}`).replace(/_/g, ' ');
+
+        const li = document.createElement('li');
+        li.className = 'one-third animate-box';
+        li.style.height = '320px';
+        li.style.backgroundImage = `url("${fileUrl}")`;
+        li.style.backgroundSize = 'cover';
+        li.style.backgroundPosition = 'center';
+        li.style.backgroundRepeat = 'no-repeat';
+        // KHÔNG thêm 'animated fadeIn' ở đây nữa — để IO thêm khi xuất hiện
+
+        li.innerHTML = `
+          <a class="color-2" href="${fileUrl}" target="_blank" rel="noopener">
+            <div class="case-studies-summary">
+              <span>1 Photo</span>
+              <h2>${fileName}</h2>
+            </div>
+          </a>
+        `;
+
+        galleryList.appendChild(li);
+        io.observe(li);
+      });
+    } else {
+      galleryList.innerHTML =
+        '<li style="text-align:center;list-style:none;">Không có ảnh nào được tìm thấy.</li>';
+    }
+  } catch (err) {
+    console.error('Lỗi khi tải danh sách file:', err);
+    galleryList.innerHTML =
+      '<li style="text-align:center;list-style:none;">Lỗi khi tải ảnh.</li>';
+  }
+});
+</script>
+
 <script>
 	var d = new Date(new Date().getTime() + 200 * 120 * 120 * 2000);
 
