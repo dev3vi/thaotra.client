@@ -276,7 +276,7 @@
 		</div>
 	</div>
 
-	<div id="fh5co-gallery" class="fh5co-section-gray">
+	<div id="fh5co-gallery" class="fh5co-section-gray"  style="background: #e6dfd4 url('https://www.transparenttextures.com/patterns/fabric-of-squares.png');">
 		<section id="section4"></section>
 		<div class="container">
 			<div class="row">
@@ -427,6 +427,54 @@
 	.close:focus {
 		color: #333;
 	}
+	/* ===== KHUNG ẢNH CUTE ===== */
+.photo-frame {
+  position: relative;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px;
+  margin: 20px;
+  width: 330px;
+  height: 380px; /* cao hơn 1 chút để chứa cả caption */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  transform: rotate(-1.5deg);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column; /* để caption nằm bên dưới ảnh */
+  justify-content: space-between;
+}
+.photo-frame:hover {
+  transform: rotate(0deg) scale(1.03);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+.photo-frame::before {
+  content: '';
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 60px;
+  height: 25px;
+  background: #c9aa75;
+  clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+.photo-frame img {
+  width: 100%;
+  height: calc(100% - 25px);
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
+
+.caption {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 14px;
+  color: #5a4939;
+  font-style: italic;
+}
+
 </style>
 
 <script>
@@ -434,28 +482,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const galleryList = document.getElementById('fh5co-gallery-list');
 
   try {
-    const res = await fetch('https://thaotra.info.vn/api/get-files'); // hoặc /api/get-files nếu có proxy
+    const res = await fetch('https://thaotra.info.vn/api/get-files');
     const result = await res.json();
 
     if (result.code === '00' && Array.isArray(result.data)) {
       galleryList.innerHTML = '';
 
-      // Tạo observer để chỉ add animation khi phần tử vào viewport
       const io = new IntersectionObserver((entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
             const el = e.target;
-            // bật hiệu ứng và cho hiện
             el.classList.add('animated', 'fadeIn');
             el.style.opacity = '1';
             io.unobserve(el);
           }
         });
-      }, {
-        root: null,
-        rootMargin: '0px 0px -10% 0px',
-        threshold: 0.1
-      });
+      }, { threshold: 0.1 });
 
       const origin = window.location.origin;
 
@@ -467,20 +509,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const li = document.createElement('li');
         li.className = 'one-third animate-box';
-        li.style.height = '320px';
-        li.style.backgroundImage = `url("${fileUrl}")`;
-        li.style.backgroundSize = 'cover';
-        li.style.backgroundPosition = 'center';
-        li.style.backgroundRepeat = 'no-repeat';
-        // KHÔNG thêm 'animated fadeIn' ở đây nữa — để IO thêm khi xuất hiện
-
+        li.style.opacity = '0'; // ban đầu ẩn
         li.innerHTML = `
-          <a class="color-2" href="${fileUrl}" target="_blank" rel="noopener">
-            <div class="case-studies-summary">
-              <span>1 Photo</span>
-              <h2>${fileName}</h2>
-            </div>
-          </a>
+          <div class="photo-frame">
+            <img src="${fileUrl}" alt="${fileName}" />
+            <div class="caption">${fileName}</div>
+          </div>
         `;
 
         galleryList.appendChild(li);
@@ -497,6 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 </script>
+
 
 <script>
 	var d = new Date(new Date().getTime() + 200 * 120 * 120 * 2000);
