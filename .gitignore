@@ -1,0 +1,33 @@
+# node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# build output
+dist/
+build/
+out/
+
+# system files
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+
+# logs
+logs/
+*.log
+
+# temporary files
+*.tmp
+*.bak
+*.swp
+
+# environment configs
+.env
+.env.local
