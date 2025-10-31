@@ -35,20 +35,28 @@
       border-radius: 10px;
       overflow: hidden;
     }
-    .thumb {
-      width: 100%;
-      height: 160px;
-      object-fit: cover;
-      display: block;
-    }
-    .badge-url {
-      background: #eef5ff;
-      border: 1px solid #cfe1ff;
-      color: #2762d7;
-      padding: 2px 6px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+#gallery{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Thẻ li là “card” */
+#gallery li{
+  background: #fff;
+  overflow: hidden;        /* chặn ảnh tràn */
+}
+
+/* Ảnh luôn cùng tỷ lệ/chiều cao */
+.thumb{
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;     /* hoặc 16/9 tùy bạn */
+  object-fit: cover;       /* cắt cho đầy khung */
+}
   </style>
 </head>
 
@@ -93,8 +101,7 @@
         <button id="btnRefresh" class="btn btn-default btn-sm">Làm mới</button>
       </div>
       <div class="panel-body">
-        <ul id="gallery" class="row"
-          style="list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));grid-gap:18px;">
+        <ul id="gallery">
         </ul>
         <div id="emptyHint" class="text-center" style="color:#999;display:none">Chưa có ảnh nào.</div>
       </div>
@@ -102,11 +109,12 @@
   </div>
 
   <script>
+    const API_BASE = 'http://127.0.0.1:8080'; // Điền URL API nếu cần
     const ENDPOINTS = {
-      LOGIN: '/api/login',
-      LIST: '/api/get-files-admin',
-      UPLOAD: '/api/upload-file',
-      DELETE: '/api/delete-file'
+      LOGIN: `${API_BASE}/api/login`,
+      LIST: `${API_BASE}/api/get-files-admin`,
+      UPLOAD: `${API_BASE}/api/upload-file`,
+      DELETE: `${API_BASE}/api/delete-file`
     };
 
     // --- Helpers ---
@@ -207,7 +215,7 @@
           <div class="card-body">
             <div style="font-weight:600">${f.fileName}</div>
             <div style="margin-top:6px">
-              <button class="btn btn-xs btn-danger btn-del" data-name="${f.fileName}">Xoá</button>
+              <button class="btn btn-xs btn-danger btn-del" data-name="${f.id}">Xoá</button>
             </div>
           </div>`;
         g.appendChild(li);
@@ -216,21 +224,13 @@
       g.querySelectorAll('.btn-del').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!confirm('Xoá ảnh này?')) return;
-          const delRes = await fetch(`${ENDPOINTS.DELETE}?fileName=${encodeURIComponent(btn.dataset.name)}`, {
+          const delRes = await fetch(`${ENDPOINTS.DELETE}?id=${encodeURIComponent(btn.dataset.name)}`, {
             method: 'DELETE',
             headers: authHeader()
           });
           if (delRes.status === 401 || delRes.status === 403) return logout();
           if (!delRes.ok) return alert('Xoá thất bại (HTTP ' + delRes.status + ')');
           loadGallery();
-        });
-      });
-
-      g.querySelectorAll('.badge-url').forEach(b => {
-        b.addEventListener('click', async () => {
-          await navigator.clipboard.writeText(b.dataset.url);
-          b.textContent = 'Đã sao chép!';
-          setTimeout(() => b.textContent = 'Sao chép URL', 1200);
         });
       });
     }
