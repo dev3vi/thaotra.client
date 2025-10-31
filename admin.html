@@ -103,8 +103,8 @@
 
   <script>
     const ENDPOINTS = {
-      LOGIN: '/api/login', // endpoint login (POST)
-      LIST: '/api/get-files',
+      LOGIN: '/api/login',
+      LIST: '/api/get-files-admin',
       UPLOAD: '/api/upload-file',
       DELETE: '/api/delete-file'
     };
@@ -112,7 +112,35 @@
     // --- Helpers ---
     const $ = (s, p=document) => p.querySelector(s);
     const tokenKey = 'adminToken';
+    
+    function showLogin() {
+      $('#adminPage').style.display = 'none';
+      $('#loginPage').style.display = 'block';
+    }
 
+    function showAdmin() {
+      $('#loginPage').style.display = 'none';
+      $('#adminPage').style.display = 'block';
+    }
+
+    function logout() {
+      localStorage.removeItem(tokenKey);
+      $('#gallery').innerHTML = '';
+      showLogin();
+    }
+
+
+    // --- UI bindings ---
+    $('#btnLogin').onclick = async () => {
+      const user = $('#username').value.trim();
+      const pass = $('#password').value.trim();
+      try {
+        await login(user, pass);
+        await loadGallery();               // <-- chỉ cần gọi loadGallery
+      } catch (e) {
+        $('#loginError').style.display = 'block';
+      }
+    };
     // --- Auth control ---
     async function login(username, password) {
       const res = await fetch(ENDPOINTS.LOGIN, {
@@ -120,10 +148,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      if (!res.ok) throw new Error('Login failed');
       const data = await res.json();
-      if (data.code === '00' && data.token) {
-        localStorage.setItem(tokenKey, data.token);
+      if (!res.ok) throw new Error('Login failed');
+      if (data.code === '00' && data.data.token) {
+        localStorage.setItem(tokenKey, data.data.token);
         return true;
       }
       throw new Error('Sai tài khoản');
@@ -145,37 +173,59 @@
       const g = $('#gallery');
       g.innerHTML = '';
       $('#emptyHint').style.display = 'none';
+
+      // GỌI API LUÔN, kèm token nếu có
       const res = await fetch(ENDPOINTS.LIST, { headers: authHeader() });
+
+      // Nếu không có quyền -> về login
+      if (res.status === 401 || res.status === 403) {
+        logout();           // xóa token + về màn login
+        return;
+      }
+
+      // Lỗi khác
+      if (!res.ok) {
+        alert('Hệ thống tạm thời gián đoạn, vui lòng thử lại sau');
+        showLogin();
+        return;
+      }
+
+      // Thành công -> vào màn admin và render
+      showAdmin();
+
       const json = await res.json();
       const files = json.data || [];
       if (!files.length) { $('#emptyHint').style.display = 'block'; return; }
+
       const origin = window.location.origin;
       files.forEach(f => {
-        const url = f.fileUrl.startsWith('http') ? f.fileUrl : origin + f.fileUrl;
+        const url = f.fileUrl?.startsWith('http') ? f.fileUrl : origin + f.fileUrl;
         const li = document.createElement('li');
         li.className = 'card';
         li.innerHTML = `
           <img class="thumb" src="${url}" alt="${f.fileName}">
           <div class="card-body">
             <div style="font-weight:600">${f.fileName}</div>
-            <div><span class="badge-url" data-url="${url}">Sao chép URL</span></div>
             <div style="margin-top:6px">
-              <a href="${url}" target="_blank" class="btn btn-xs btn-default">Xem</a>
               <button class="btn btn-xs btn-danger btn-del" data-name="${f.fileName}">Xoá</button>
             </div>
           </div>`;
         g.appendChild(li);
       });
+
       g.querySelectorAll('.btn-del').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!confirm('Xoá ảnh này?')) return;
-          await fetch(`${ENDPOINTS.DELETE}?fileName=${btn.dataset.name}`, {
+          const delRes = await fetch(`${ENDPOINTS.DELETE}?fileName=${encodeURIComponent(btn.dataset.name)}`, {
             method: 'DELETE',
             headers: authHeader()
           });
+          if (delRes.status === 401 || delRes.status === 403) return logout();
+          if (!delRes.ok) return alert('Xoá thất bại (HTTP ' + delRes.status + ')');
           loadGallery();
         });
       });
+
       g.querySelectorAll('.badge-url').forEach(b => {
         b.addEventListener('click', async () => {
           await navigator.clipboard.writeText(b.dataset.url);
@@ -195,22 +245,15 @@
         method: 'POST',
         headers: authHeader(),
         body: form
-      }).then(r => r.json()).then(() => loadGallery());
+      })
+      .then(r => {
+        if (r.status === 401 || r.status === 403) { logout(); return null; }
+        if (!r.ok) { alert('Upload thất bại (HTTP ' + r.status + ')'); return null; }
+        return r.json();
+      })
+      .then(json => { if (json) loadGallery(); });
     }
 
-    // --- UI bindings ---
-    $('#btnLogin').onclick = async () => {
-      const user = $('#username').value.trim();
-      const pass = $('#password').value.trim();
-      try {
-        await login(user, pass);
-        $('#loginPage').style.display = 'none';
-        $('#adminPage').style.display = 'block';
-        loadGallery();
-      } catch (e) {
-        $('#loginError').style.display = 'block';
-      }
-    };
     $('#btnLogout').onclick = logout;
     $('#btnPick').onclick = () => $('#fileInput').click();
     $('#fileInput').onchange = e => [...e.target.files].forEach(validateAndUpload);
